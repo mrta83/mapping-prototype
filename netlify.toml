@@ -1,0 +1,10 @@
+# Netlify configuration for static site
+
+[build]
+  publish = "."
+
+# Redirect root to the modular version
+[[redirects]]
+  from = "/"
+  to = "/templates/map-prototype-modular.html"
+  status = 200
