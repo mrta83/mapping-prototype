@@ -1,0 +1,3021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Texas Locations Prototype</title>
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      /* Futuristic color palette */
+      --tech-bg-deep: #0a0a14;
+      --tech-bg-card: #0f1019;
+      --tech-bg-elevated: #141420;
+      --tech-bg-input: #1a1a28;
+      --tech-border: #252536;
+      --tech-border-glow: #2d3548;
+      --tech-text: #e4e4ed;
+      --tech-text-muted: #8888a0;
+      --tech-text-dim: #5a5a72;
+      --tech-accent: #00d4aa;
+      --tech-accent-glow: rgba(0, 212, 170, 0.3);
+      --tech-accent-soft: rgba(0, 212, 170, 0.15);
+      --tech-secondary: #3b82f6;
+      --tech-secondary-glow: rgba(59, 130, 246, 0.3);
+      --tech-warning: #f59e0b;
+      --tech-gradient-start: #00d4aa;
+      --tech-gradient-end: #3b82f6;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--tech-bg-deep);
+      color: var(--tech-text);
+    }
+
+    .app {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 300px;
+      min-width: 300px;
+      background: var(--tech-bg-card);
+      border-right: 1px solid var(--tech-border);
+      padding: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      flex-shrink: 0;
+      color: var(--tech-text);
+      transition: width 0.3s ease, min-width 0.3s ease, border-color 0.3s;
+      position: relative;
+    }
+
+    .sidebar::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 1px;
+      height: 100%;
+      background: linear-gradient(180deg, var(--tech-accent) 0%, transparent 50%, var(--tech-secondary) 100%);
+      opacity: 0.3;
+    }
+
+    .sidebar.collapsed {
+      width: 0;
+      min-width: 0;
+      border-right: none;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed::before {
+      display: none;
+    }
+
+    .sidebar-inner {
+      padding: 20px;
+      min-width: 260px;
+    }
+
+    /* Sidebar Toggle */
+    .sidebar-toggle {
+      position: fixed;
+      top: 50%;
+      left: 300px;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 64px;
+      background: var(--tech-bg-elevated);
+      border: 1px solid var(--tech-border);
+      border-left: none;
+      border-radius: 0 6px 6px 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: var(--tech-text-muted);
+      transition: all 0.3s ease;
+      z-index: 30;
+    }
+
+    .sidebar-toggle:hover {
+      color: var(--tech-accent);
+      background: var(--tech-bg-input);
+      border-color: var(--tech-accent);
+      box-shadow: 0 0 12px var(--tech-accent-glow);
+    }
+
+    .sidebar-toggle .toggle-icon {
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar-toggle.collapsed {
+      left: 0;
+    }
+
+    .sidebar-toggle.collapsed .toggle-icon {
+      transform: rotate(180deg);
+    }
+
+    /* Sidebar Header */
+    .sidebar-header {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--tech-border);
+      background: linear-gradient(180deg, var(--tech-bg-elevated) 0%, var(--tech-bg-card) 100%);
+    }
+
+    .sidebar h1 {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--tech-text);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sidebar h1::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: var(--tech-accent);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--tech-accent-glow);
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--tech-accent-glow); }
+      50% { opacity: 0.6; box-shadow: 0 0 4px var(--tech-accent-glow); }
+    }
+
+    .sidebar .subtitle {
+      font-size: 11px;
+      color: var(--tech-text-dim);
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.3px;
+    }
+
+    /* Section Styling */
+    .section {
+      margin-bottom: 0;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--tech-border);
+    }
+
+    .section:last-child {
+      border-bottom: none;
+    }
+
+    .section-title {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--tech-text-dim);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--tech-border) 0%, transparent 100%);
+    }
+
+    .control-group {
+      margin-bottom: 14px;
+    }
+
+    .control-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .control-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--tech-text-muted);
+      margin-bottom: 8px;
+      letter-spacing: 0.2px;
+    }
+
+    /* Futuristic Range Slider */
+    .control-group input[type="range"] {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--tech-bg-input);
+      outline: none;
+      -webkit-appearance: none;
+      position: relative;
+    }
+
+    .control-group input[type="range"]::-webkit-slider-track {
+      height: 6px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--tech-accent) 0%, var(--tech-bg-input) 0%);
+    }
+
+    .control-group input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--tech-accent);
+      cursor: pointer;
+      border: 3px solid var(--tech-bg-card);
+      box-shadow: 0 0 10px var(--tech-accent-glow), 0 2px 4px rgba(0,0,0,0.3);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .control-group input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 16px var(--tech-accent-glow), 0 2px 6px rgba(0,0,0,0.4);
+    }
+
+    /* Futuristic Select */
+    .control-group select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--tech-border);
+      border-radius: 6px;
+      font-size: 12px;
+      background: var(--tech-bg-input);
+      color: var(--tech-text);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .control-group select:hover {
+      border-color: var(--tech-border-glow);
+    }
+
+    .control-group select:focus {
+      outline: none;
+      border-color: var(--tech-accent);
+      box-shadow: 0 0 0 3px var(--tech-accent-soft);
+    }
+
+    .control-group input[type="text"] {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--tech-border);
+      border-radius: 6px;
+      font-size: 12px;
+      background: var(--tech-bg-input);
+      color: var(--tech-text);
+      transition: all 0.2s ease;
+    }
+
+    .control-group input[type="text"]:focus {
+      outline: none;
+      border-color: var(--tech-accent);
+      box-shadow: 0 0 0 3px var(--tech-accent-soft);
+    }
+
+    .value-display {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--tech-accent);
+      margin-top: 6px;
+      padding: 4px 8px;
+      background: var(--tech-accent-soft);
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Futuristic Button */
+    .btn {
+      padding: 10px 16px;
+      border: 1px solid var(--tech-border);
+      border-radius: 6px;
+      background: var(--tech-bg-input);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--tech-text);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+      transition: left 0.4s ease;
+    }
+
+    .btn:hover {
+      border-color: var(--tech-accent);
+      color: var(--tech-accent);
+      background: var(--tech-accent-soft);
+    }
+
+    .btn:hover::before {
+      left: 100%;
+    }
+
+    .btn.active {
+      background: linear-gradient(135deg, var(--tech-accent) 0%, #00a080 100%);
+      border-color: var(--tech-accent);
+      color: var(--tech-bg-deep);
+      font-weight: 600;
+      box-shadow: 0 0 16px var(--tech-accent-glow);
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, var(--tech-accent) 0%, #00a080 100%);
+      border-color: var(--tech-accent);
+      color: var(--tech-bg-deep);
+      font-weight: 600;
+    }
+
+    .btn.primary:hover {
+      box-shadow: 0 0 20px var(--tech-accent-glow);
+      transform: translateY(-1px);
+    }
+
+    /* Icon Buttons */
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--tech-bg-input);
+      border: 1px solid var(--tech-border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 18px;
+    }
+
+    .icon-btn:hover {
+      border-color: var(--tech-accent);
+      background: var(--tech-accent-soft);
+      box-shadow: 0 0 12px var(--tech-accent-glow);
+    }
+
+    .icon-btn.active {
+      border-color: var(--tech-accent);
+      background: var(--tech-accent-soft);
+      box-shadow: 0 0 16px var(--tech-accent-glow);
+    }
+
+    /* Color Row */
+    .color-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .color-row input[type="color"] {
+      width: 32px;
+      height: 32px;
+      border: 2px solid var(--tech-border);
+      border-radius: 6px;
+      cursor: pointer;
+      background: transparent;
+      padding: 0;
+    }
+
+    .color-row input[type="color"]::-webkit-color-swatch-wrapper {
+      padding: 2px;
+    }
+
+    .color-row input[type="color"]::-webkit-color-swatch {
+      border-radius: 3px;
+      border: none;
+    }
+
+    .color-row span {
+      font-size: 12px;
+      color: var(--tech-text-muted);
+    }
+
+    /* Map Container */
+    .map-container {
+      flex: 1;
+      position: relative;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Futuristic Glass Card Base */
+    .glass-card {
+      background: rgba(10, 10, 20, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--tech-border);
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    /* Stats Overlay */
+    .stats {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: rgba(10, 10, 20, 0.9);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 14px 18px;
+      border-radius: 12px;
+      border: 1px solid var(--tech-border);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+      font-size: 12px;
+      z-index: 10;
+      color: var(--tech-text);
+    }
+
+    .stats::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--tech-accent), transparent);
+      opacity: 0.5;
+      border-radius: 12px 12px 0 0;
+    }
+
+    .stats .stat {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .stats .stat-label {
+      color: var(--tech-text-muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stats .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--tech-accent);
+      text-shadow: 0 0 10px var(--tech-accent-glow);
+    }
+
+    /* Legend */
+    .legend {
+      position: absolute;
+      bottom: 40px;
+      left: 16px;
+      background: rgba(10, 10, 20, 0.9);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 14px 18px;
+      border-radius: 12px;
+      border: 1px solid var(--tech-border);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+      font-size: 11px;
+      z-index: 10;
+      min-width: 180px;
+      color: var(--tech-text);
+    }
+
+    .legend::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--tech-secondary), transparent);
+      opacity: 0.5;
+      border-radius: 0 0 12px 12px;
+    }
+
+    /* Map Mode Selector */
+    .map-mode-selector {
+      position: absolute;
+      bottom: 80px;
+      right: 16px;
+      background: rgba(10, 10, 20, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 12px;
+      border: 1px solid var(--tech-border);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+      z-index: 10;
+      min-width: 160px;
+      max-height: calc(100vh - 160px);
+      overflow-y: auto;
+      overflow-x: hidden;
+      transition: right 0.3s ease;
+    }
+
+    .map-mode-selector::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--tech-accent), transparent);
+      opacity: 0.6;
+      border-radius: 12px 12px 0 0;
+    }
+
+    /* Shift mode selector when data panel is open */
+    .map-mode-selector.panel-open {
+      right: 296px;
+    }
+
+    .map-mode-selector-title {
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--tech-text-dim);
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid var(--tech-border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .map-mode-selector-title::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: var(--tech-accent);
+      border-radius: 50%;
+      box-shadow: 0 0 6px var(--tech-accent-glow);
+    }
+
+    .map-mode-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--tech-text-muted);
+      width: 100%;
+      text-align: left;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .map-mode-btn::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 0;
+      background: var(--tech-accent);
+      border-radius: 0 2px 2px 0;
+      transition: height 0.2s ease;
+    }
+
+    .map-mode-btn:hover {
+      background: rgba(0, 212, 170, 0.08);
+      color: var(--tech-text);
+    }
+
+    .map-mode-btn:hover::before {
+      height: 20px;
+    }
+
+    .map-mode-btn.active {
+      background: var(--tech-accent-soft);
+      color: var(--tech-accent);
+    }
+
+    .map-mode-btn.active::before {
+      height: 28px;
+      box-shadow: 0 0 8px var(--tech-accent-glow);
+    }
+
+    .map-mode-btn.active .mode-icon {
+      opacity: 1;
+      filter: drop-shadow(0 0 4px var(--tech-accent-glow));
+    }
+
+    .map-mode-btn .mode-icon {
+      font-size: 16px;
+      width: 22px;
+      text-align: center;
+      opacity: 0.6;
+      transition: all 0.2s ease;
+    }
+
+    .map-control-section {
+      padding: 12px 16px;
+      border-top: 1px solid var(--tech-border);
+    }
+
+    .map-control-section-title {
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--tech-text-dim);
+      margin-bottom: 10px;
+    }
+
+    .map-control-section select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--tech-border);
+      border-radius: 6px;
+      font-size: 11px;
+      background: var(--tech-bg-input);
+      color: var(--tech-text);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .map-control-section select:hover {
+      border-color: var(--tech-border-glow);
+    }
+
+    .map-control-section select:focus {
+      outline: none;
+      border-color: var(--tech-accent);
+      box-shadow: 0 0 0 3px var(--tech-accent-soft);
+    }
+
+    .map-control-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      color: var(--tech-text-muted);
+      cursor: pointer;
+      padding: 6px 0;
+      transition: color 0.2s ease;
+    }
+
+    .map-control-checkbox:hover {
+      color: var(--tech-text);
+    }
+
+    .map-control-checkbox input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: var(--tech-accent);
+    }
+
+    .map-control-slider {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--tech-border);
+    }
+
+    .map-control-slider label {
+      display: block;
+      font-size: 10px;
+      color: var(--tech-text-dim);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .map-control-slider input[type="range"] {
+      width: 100%;
+      height: 4px;
+      cursor: pointer;
+      background: var(--tech-bg-input);
+      border-radius: 2px;
+      -webkit-appearance: none;
+    }
+
+    .map-control-slider input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--tech-accent);
+      border: 2px solid var(--tech-bg-deep);
+      box-shadow: 0 0 8px var(--tech-accent-glow);
+      cursor: pointer;
+    }
+
+    .map-control-slider .value-display {
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--tech-accent);
+      text-align: right;
+      margin-top: 4px;
+    }
+
+    /* Legend Styling */
+    .legend-title {
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      color: var(--tech-text);
+      border-bottom: 1px solid var(--tech-border);
+      padding-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-title::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: var(--tech-secondary);
+      border-radius: 50%;
+      box-shadow: 0 0 6px var(--tech-secondary-glow);
+    }
+
+    .legend-section {
+      margin-bottom: 12px;
+    }
+
+    .legend-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .legend-label {
+      font-weight: 500;
+      color: var(--tech-text-dim);
+      margin-bottom: 8px;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 6px 0;
+      padding: 4px 0;
+    }
+
+    .legend-circle {
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .legend-gradient {
+      height: 8px;
+      border-radius: 4px;
+      margin: 6px 0;
+      width: 100%;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .legend-gradient-labels {
+      display: flex;
+      justify-content: space-between;
+      color: var(--tech-text-dim);
+      font-size: 9px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .legend-icon {
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .legend-text {
+      color: var(--tech-text-muted);
+      font-size: 11px;
+    }
+
+    /* Keep tech theme for all map styles */
+    .map-container {
+      --overlay-bg: rgba(10, 10, 20, 0.9);
+      --overlay-text: var(--tech-text);
+      --overlay-heading: var(--tech-text);
+      --overlay-muted: var(--tech-text-muted);
+      --overlay-border: var(--tech-border);
+      --overlay-hover: var(--tech-accent-soft);
+      --overlay-active-bg: var(--tech-accent-soft);
+      --overlay-active-text: var(--tech-accent);
+      --overlay-circle-border: rgba(255, 255, 255, 0.2);
+      --overlay-input-bg: var(--tech-bg-input);
+      --overlay-input-text: var(--tech-text);
+    }
+
+    /* Data Panel Slide-out */
+    .data-panel {
+      position: absolute;
+      top: 16px;
+      right: 0;
+      bottom: 16px;
+      width: 280px;
+      background: rgba(10, 10, 20, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 12px 0 0 12px;
+      border: 1px solid var(--tech-border);
+      border-right: none;
+      box-shadow: -4px 0 24px rgba(0, 0, 0, 0.4);
+      z-index: 20;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .data-panel::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 1px;
+      background: linear-gradient(180deg, var(--tech-secondary) 0%, transparent 50%, var(--tech-accent) 100%);
+      opacity: 0.4;
+      border-radius: 12px 0 0 12px;
+    }
+
+    .data-panel.open {
+      transform: translateX(0);
+    }
+
+    .data-panel-toggle {
+      position: absolute;
+      top: 50%;
+      right: 0;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 64px;
+      background: var(--tech-bg-elevated);
+      border: 1px solid var(--tech-border);
+      border-right: none;
+      border-radius: 6px 0 0 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: var(--tech-text-muted);
+      transition: all 0.3s ease;
+      z-index: 21;
+    }
+
+    .data-panel-toggle:hover {
+      color: var(--tech-accent);
+      background: var(--tech-bg-input);
+      border-color: var(--tech-accent);
+      box-shadow: 0 0 12px var(--tech-accent-glow);
+    }
+
+    .data-panel-toggle .toggle-icon {
+      transition: transform 0.3s ease;
+    }
+
+    .data-panel-toggle.open {
+      right: 280px;
+    }
+
+    .data-panel-toggle.open .toggle-icon {
+      transform: rotate(180deg);
+    }
+
+    .data-panel-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--tech-border);
+      background: linear-gradient(180deg, var(--tech-bg-elevated) 0%, transparent 100%);
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--tech-text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .data-panel-header::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: var(--tech-secondary);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--tech-secondary-glow);
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+
+    .data-panel-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0;
+    }
+
+    .data-panel .section {
+      margin-bottom: 0;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--tech-border);
+    }
+
+    .data-panel .section:last-child {
+      border-bottom: none;
+    }
+
+    .data-panel .section-title {
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--tech-text-dim);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .data-panel .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--tech-border) 0%, transparent 100%);
+    }
+
+    .data-panel .control-group {
+      margin-bottom: 14px;
+    }
+
+    .data-panel .control-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .data-panel .control-group label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: var(--tech-text-muted);
+      letter-spacing: 0.2px;
+    }
+
+    .data-panel .control-group select,
+    .data-panel .control-group input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--tech-border);
+      border-radius: 6px;
+      font-size: 11px;
+      background: var(--tech-bg-input);
+      color: var(--tech-text);
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .data-panel .control-group select:focus,
+    .data-panel .control-group input[type="text"]:focus {
+      outline: none;
+      border-color: var(--tech-accent);
+      box-shadow: 0 0 0 3px var(--tech-accent-soft);
+    }
+
+    .data-panel .control-group input[type="range"] {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--tech-bg-input);
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    .data-panel .control-group input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--tech-accent);
+      border: 3px solid var(--tech-bg-card);
+      box-shadow: 0 0 10px var(--tech-accent-glow);
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .data-panel .control-group input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 16px var(--tech-accent-glow);
+    }
+
+    .data-panel .value-display {
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--tech-accent);
+      margin-top: 6px;
+      padding: 3px 6px;
+      background: var(--tech-accent-soft);
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .data-panel .btn-group {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .data-panel .btn {
+      padding: 8px 12px;
+      border: 1px solid var(--tech-border);
+      border-radius: 5px;
+      background: var(--tech-bg-input);
+      font-size: 10px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: var(--tech-text-muted);
+    }
+
+    .data-panel .btn:hover {
+      background: var(--tech-accent-soft);
+      border-color: var(--tech-accent);
+      color: var(--tech-accent);
+    }
+
+    .data-panel .btn.active {
+      background: linear-gradient(135deg, var(--tech-accent) 0%, #00a080 100%);
+      border-color: var(--tech-accent);
+      color: var(--tech-bg-deep);
+      font-weight: 600;
+      box-shadow: 0 0 12px var(--tech-accent-glow);
+    }
+
+    .data-panel .btn.primary {
+      background: linear-gradient(135deg, var(--tech-accent) 0%, #00a080 100%);
+      border-color: var(--tech-accent);
+      color: var(--tech-bg-deep);
+      font-weight: 600;
+    }
+
+    .data-panel .btn.primary:hover {
+      box-shadow: 0 0 16px var(--tech-accent-glow);
+      transform: translateY(-1px);
+    }
+
+    .data-panel-actions {
+      padding: 16px 20px;
+      border-top: 1px solid var(--tech-border);
+      background: linear-gradient(0deg, var(--tech-bg-elevated) 0%, transparent 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .data-panel-actions .btn {
+      width: 100%;
+      padding: 12px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Token Modal */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal.hidden {
+      display: none;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--tech-bg-deep);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--tech-border-glow);
+      border-radius: 3px;
+      transition: background 0.2s ease;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--tech-accent);
+    }
+
+    .modal-content {
+      background: var(--tech-bg-card);
+      border: 1px solid var(--tech-border);
+      padding: 32px;
+      border-radius: 16px;
+      max-width: 420px;
+      width: 90%;
+      box-shadow: 0 8px 48px rgba(0, 0, 0, 0.5);
+      position: relative;
+    }
+
+    .modal-content::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--tech-accent), transparent);
+      opacity: 0.6;
+      border-radius: 16px 16px 0 0;
+    }
+
+    .modal-content h2 {
+      font-size: 16px;
+      margin-bottom: 8px;
+      color: var(--tech-text);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .modal-content p {
+      font-size: 12px;
+      color: var(--tech-text-muted);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .modal-content input {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid var(--tech-border);
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 20px;
+      background: var(--tech-bg-input);
+      color: var(--tech-text);
+      transition: all 0.2s ease;
+    }
+
+    .modal-content input:focus {
+      outline: none;
+      border-color: var(--tech-accent);
+      box-shadow: 0 0 0 3px var(--tech-accent-soft);
+    }
+
+    .modal-content a {
+      color: var(--tech-accent);
+      text-decoration: none;
+    }
+
+    .modal-content a:hover {
+      text-decoration: underline;
+      text-shadow: 0 0 8px var(--tech-accent-glow);
+    }
+
+    /* Checkbox styling */
+    .control-group label input[type="checkbox"] {
+      margin-right: 10px;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: var(--tech-accent);
+    }
+
+    .control-group label:has(input[type="checkbox"]) {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      font-weight: 400;
+      transition: color 0.2s ease;
+    }
+
+    .control-group label:has(input[type="checkbox"]):hover {
+      color: var(--tech-text);
+    }
+
+    /* Icon Picker */
+    .icon-picker {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      width: 44px;
+      height: 44px;
+      border: 2px solid #e5e5e5;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .icon-btn:hover {
+      border-color: #3b82f6;
+      background: #f0f7ff;
+    }
+
+    .icon-btn.active {
+      border-color: #3b82f6;
+      background: #e8f4fd;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+
+    /* Popup styling */
+    .mapboxgl-popup-content {
+      padding: 12px 16px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .popup-title {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .popup-detail {
+      font-size: 12px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <!-- Token Modal -->
+  <div id="tokenModal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Mapbox Access Token</h2>
+      <p>Enter your Mapbox public token to load the map. Get one free at <a href="https://account.mapbox.com/access-tokens/" target="_blank">mapbox.com</a></p>
+      <input type="text" id="tokenInput" placeholder="pk.eyJ1Ijoi...">
+      <button class="btn primary" onclick="saveToken()" style="width: 100%">Load Map</button>
+    </div>
+  </div>
+
+  <div class="app">
+    <!-- Sidebar Toggle (always visible) -->
+    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+      <span class="toggle-icon">◀</span>
+    </button>
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h1>Texas Locations</h1>
+        <p class="subtitle">// RECYCLING NETWORK v2.0</p>
+      </div>
+
+      <!-- Cluster Settings -->
+      <div class="section" id="clusterSettings">
+        <div class="section-title">Cluster Settings</div>
+        <div class="control-group">
+          <label>Size Represents</label>
+          <div class="btn-group">
+            <button class="btn active" data-size-metric="count" onclick="setClusterSizeMetric('count')">Locations</button>
+            <button class="btn" data-size-metric="weight" onclick="setClusterSizeMetric('weight')">Weight</button>
+          </div>
+        </div>
+        <div class="control-group">
+          <label>Color Represents</label>
+          <div class="btn-group">
+            <button class="btn" data-color-metric="count" onclick="setClusterColorMetric('count')">Locations</button>
+            <button class="btn active" data-color-metric="weight" onclick="setClusterColorMetric('weight')">Avg Weight</button>
+          </div>
+        </div>
+        <div class="control-group">
+          <label>Cluster Radius</label>
+          <input type="range" id="clusterRadius" min="20" max="100" value="50" oninput="updateClusterRadius(this.value)">
+          <div class="value-display"><span id="clusterRadiusValue">50</span>px</div>
+        </div>
+        <div class="control-group">
+          <label>Max Zoom</label>
+          <input type="range" id="clusterMaxZoom" min="8" max="18" value="14" oninput="updateClusterMaxZoom(this.value)">
+          <div class="value-display">Level <span id="clusterMaxZoomValue">14</span></div>
+        </div>
+        <div class="control-group">
+          <label>Opacity</label>
+          <input type="range" id="clusterOpacity" min="0.1" max="1" step="0.1" value="0.8" oninput="updateClusterOpacity(this.value)">
+          <div class="value-display"><span id="clusterOpacityValue">0.8</span></div>
+        </div>
+      </div>
+
+      <!-- Markers Settings -->
+      <div class="section hidden" id="markersSettings">
+        <div class="section-title">Marker Settings</div>
+        <div class="control-group">
+          <label>Marker Icon</label>
+          <div class="icon-picker">
+            <button class="icon-btn active" data-icon="recycling-bin" onclick="setMarkerIcon('recycling-bin')" title="Recycling Bin">
+              <span>♻️</span>
+            </button>
+            <button class="icon-btn" data-icon="wastebin" onclick="setMarkerIcon('wastebin')" title="Waste Bin">
+              <span>🗑️</span>
+            </button>
+            <button class="icon-btn" data-icon="poop" onclick="setMarkerIcon('poop')" title="Poop">
+              <span>💩</span>
+            </button>
+            <button class="icon-btn" data-icon="leaf" onclick="setMarkerIcon('leaf')" title="Eco Leaf">
+              <span>🌿</span>
+            </button>
+            <button class="icon-btn" data-icon="pin" onclick="setMarkerIcon('pin')" title="Map Pin">
+              <span>📍</span>
+            </button>
+            <button class="icon-btn" data-icon="factory" onclick="setMarkerIcon('factory')" title="Factory">
+              <span>🏭</span>
+            </button>
+          </div>
+        </div>
+        <div class="control-group">
+          <label>Icon Size</label>
+          <input type="range" id="markerSize" min="0.4" max="1.5" step="0.1" value="0.8" oninput="updateMarkerSize(this.value)">
+          <div class="value-display"><span id="markerSizeValue">0.8</span>x</div>
+        </div>
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="scaleByVolume" checked onchange="updateMarkerScaling()">
+            Scale by recycling volume
+          </label>
+        </div>
+      </div>
+
+      <!-- Heatmap Settings -->
+      <div class="section hidden" id="heatmapSettings">
+        <div class="section-title">Heatmap Settings</div>
+        <div class="control-group">
+          <label>Heat Represents</label>
+          <div class="btn-group">
+            <button class="btn active" data-heat-metric="count" onclick="setHeatMetric('count')">Location Density</button>
+            <button class="btn" data-heat-metric="weight" onclick="setHeatMetric('weight')">Total Weight</button>
+          </div>
+        </div>
+        <div class="control-group">
+          <label>Intensity</label>
+          <input type="range" id="heatIntensity" min="0.1" max="2" step="0.1" value="1" oninput="updateHeatmap()">
+          <div class="value-display"><span id="heatIntensityValue">1</span></div>
+        </div>
+        <div class="control-group">
+          <label>Radius</label>
+          <input type="range" id="heatRadius" min="5" max="50" value="20" oninput="updateHeatmap()">
+          <div class="value-display"><span id="heatRadiusValue">20</span>px</div>
+        </div>
+        <div class="control-group">
+          <label>Opacity</label>
+          <input type="range" id="heatOpacity" min="0.1" max="1" step="0.1" value="0.8" oninput="updateHeatmap()">
+          <div class="value-display"><span id="heatOpacityValue">0.8</span></div>
+        </div>
+      </div>
+
+      <!-- Style and 3D Sections moved to mode selector on map -->
+
+      <!-- Colors Section -->
+      <div class="section">
+        <div class="section-title">Colors</div>
+        <div class="control-group">
+          <label>Primary Color</label>
+          <div class="color-row">
+            <input type="color" id="primaryColor" value="#3b82f6" onchange="updateColors()">
+            <span id="primaryColorHex">#3b82f6</span>
+          </div>
+        </div>
+        <div class="control-group">
+          <label>Secondary Color</label>
+          <div class="color-row">
+            <input type="color" id="secondaryColor" value="#ef4444" onchange="updateColors()">
+            <span id="secondaryColorHex">#ef4444</span>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+    <main class="map-container">
+      <div id="map"></div>
+      <div class="stats">
+        <div class="stat">
+          <span>Points:</span>
+          <span class="stat-value" id="statPoints">0</span>
+        </div>
+        <div class="stat">
+          <span>Visible:</span>
+          <span class="stat-value" id="statVisible">0</span>
+        </div>
+        <div class="stat">
+          <span>Zoom:</span>
+          <span class="stat-value" id="statZoom">10</span>
+        </div>
+      </div>
+      <div class="legend" id="legend">
+        <!-- Legend content populated by JavaScript -->
+      </div>
+
+      <!-- Mode Selector (Google Maps style) -->
+      <div class="map-mode-selector">
+        <div class="map-mode-selector-title">View Mode</div>
+        <button class="map-mode-btn active" data-mode="clusters" onclick="setMode('clusters')">
+          <span class="mode-icon">⬡</span>
+          <span>Clusters</span>
+        </button>
+        <button class="map-mode-btn" data-mode="heatmap" onclick="setMode('heatmap')">
+          <span class="mode-icon">🔥</span>
+          <span>Heatmap</span>
+        </button>
+        <button class="map-mode-btn" data-mode="markers" onclick="setMode('markers')">
+          <span class="mode-icon">♻️</span>
+          <span>Markers</span>
+        </button>
+
+        <!-- Map Style -->
+        <div class="map-control-section">
+          <div class="map-control-section-title">Map Style</div>
+          <select id="mapStyle" onchange="changeStyle()">
+            <option value="benkl13/cmjtcx5hy001e01sk2nq78n5x" selected>Cyber</option>
+            <option value="dark-v11">Dark</option>
+            <option value="light-v11">Light</option>
+            <option value="streets-v12">Streets</option>
+            <option value="satellite-streets-v12">Satellite</option>
+            <option value="outdoors-v12">Outdoors</option>
+            <option value="standard">3D Standard</option>
+          </select>
+        </div>
+
+        <!-- 3D Controls -->
+        <div class="map-control-section" id="threeDSettings">
+          <div class="map-control-section-title">3D</div>
+          <label class="map-control-checkbox">
+            <input type="checkbox" id="show3DBuildings" onchange="toggle3DBuildings()">
+            <span>3D Buildings</span>
+          </label>
+          <label class="map-control-checkbox">
+            <input type="checkbox" id="show3DTerrain" onchange="toggle3DTerrain()">
+            <span>3D Terrain</span>
+          </label>
+          <div class="map-control-slider" id="terrainExaggeration" style="display: none;">
+            <label>Terrain Exaggeration</label>
+            <input type="range" id="exaggeration" min="0.5" max="3" step="0.1" value="1.5" oninput="updateExaggeration(this.value)">
+            <div class="value-display"><span id="exaggerationValue">1.5</span>x</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Panel Toggle (always visible) -->
+      <button class="data-panel-toggle" id="dataPanelToggle" onclick="toggleDataPanel()">
+        <span class="toggle-icon">◀</span>
+      </button>
+
+      <!-- Data Panel Slide-out -->
+      <div class="data-panel" id="dataPanel">
+        <div class="data-panel-header">
+          <span>📊</span> Data Controls
+        </div>
+        <div class="data-panel-content">
+          <!-- Generation -->
+          <div class="section">
+            <div class="section-title">Generation</div>
+            <div class="control-group">
+              <label>Point Count</label>
+              <input type="range" id="pointCount" min="10" max="10000" step="10" value="500" oninput="updatePointCount(this.value)">
+              <div class="value-display"><span id="pointCountValue">500</span> points</div>
+            </div>
+            <div class="control-group">
+              <label>Distribution</label>
+              <select id="distribution" onchange="regenerateData()">
+                <option value="clustered">Clustered (Neighborhoods)</option>
+                <option value="uniform">Uniform (Spread)</option>
+                <option value="route">I-35 Corridor</option>
+                <option value="coastal">Houston Coast / City Loops</option>
+              </select>
+            </div>
+            <div class="control-group">
+              <label>Region</label>
+              <select id="region" onchange="changeRegion()">
+                <option value="texas">Texas (All)</option>
+                <option value="houston">Houston</option>
+                <option value="dallas">Dallas-Fort Worth</option>
+                <option value="austin">Austin</option>
+                <option value="sanantonio">San Antonio</option>
+              </select>
+            </div>
+            <button class="btn primary" onclick="regenerateData()" style="width: 100%; margin-top: 8px;">Regenerate Data</button>
+          </div>
+
+          <!-- Filters -->
+          <div class="section">
+            <div class="section-title">Filters</div>
+            <div class="control-group">
+              <label>Category</label>
+              <div class="btn-group">
+                <button class="btn active" data-category="all" onclick="setCategoryFilter('all')">All</button>
+                <button class="btn" data-category="Restaurant" onclick="setCategoryFilter('Restaurant')">Restaurant</button>
+                <button class="btn" data-category="Shop" onclick="setCategoryFilter('Shop')">Shop</button>
+                <button class="btn" data-category="Office" onclick="setCategoryFilter('Office')">Office</button>
+                <button class="btn" data-category="Park" onclick="setCategoryFilter('Park')">Park</button>
+                <button class="btn" data-category="Transit" onclick="setCategoryFilter('Transit')">Transit</button>
+              </div>
+            </div>
+            <div class="control-group">
+              <label>Volume</label>
+              <div class="btn-group">
+                <button class="btn active" data-volume="all" onclick="setVolumeFilter('all')">All</button>
+                <button class="btn" data-volume="small" onclick="setVolumeFilter('small')">1-3t</button>
+                <button class="btn" data-volume="medium" onclick="setVolumeFilter('medium')">4-6t</button>
+                <button class="btn" data-volume="large" onclick="setVolumeFilter('large')">7-10t</button>
+              </div>
+              <div class="value-display">Showing: <span id="filteredCountPanel">500</span> locations</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions at bottom -->
+        <div class="data-panel-actions">
+          <button class="btn" onclick="fitBounds()">Fit to Data</button>
+          <button class="btn" onclick="resetView()">Reset View</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // =========================================
+    // CONFIGURATION - Edit these for your needs
+    // =========================================
+    const REGIONS = {
+      texas: { center: [-99.5, 31.0], zoom: 5.5, name: 'Texas (All)' },
+      houston: { center: [-95.3698, 29.7604], zoom: 10, name: 'Houston' },
+      dallas: { center: [-96.7970, 32.7767], zoom: 10, name: 'Dallas-Fort Worth' },
+      austin: { center: [-97.7431, 30.2672], zoom: 11, name: 'Austin' },
+      sanantonio: { center: [-98.4936, 29.4241], zoom: 11, name: 'San Antonio' }
+    };
+
+    // =========================================
+    // STATE
+    // =========================================
+    let map;
+    let currentMode = 'clusters';
+    let currentData = [];
+    let currentGeoJSON = null;  // Store GeoJSON for mode switching
+    let popup;
+
+    // Metric settings
+    let clusterSizeMetric = 'count';   // 'count' or 'weight'
+    let clusterColorMetric = 'weight'; // 'count' or 'weight'
+    let heatMetric = 'count';          // 'count' or 'weight'
+
+    // Filters
+    let volumeFilter = 'all';    // 'all', 'small', 'medium', 'large'
+    let categoryFilter = 'all';  // 'all', 'Restaurant', 'Shop', 'Office', 'Park', 'Transit'
+
+    // Marker settings
+    let currentMarkerIcon = 'recycling-bin';
+    let markerBaseSize = 0.8;
+    let scaleByVolume = true;
+
+    // =========================================
+    // INITIALIZATION
+    // =========================================
+    function init() {
+      // Detect system dark mode preference and set initial style
+      detectSystemTheme();
+
+      const token = localStorage.getItem('mapbox_token');
+      if (!token) {
+        document.getElementById('tokenModal').classList.remove('hidden');
+        return;
+      }
+      initMap(token);
+    }
+
+    function detectSystemTheme() {
+      const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const styleSelect = document.getElementById('mapStyle');
+      const cyberStyle = 'benkl13/cmjtcx5hy001e01sk2nq78n5x';
+
+      // Set initial theme based on system preference
+      if (darkModeQuery.matches) {
+        styleSelect.value = cyberStyle;
+        // Pre-apply dark theme to sidebar before map loads
+        applySidebarTheme(cyberStyle);
+      }
+
+      // Listen for system theme changes
+      darkModeQuery.addEventListener('change', (e) => {
+        const newStyle = e.matches ? cyberStyle : 'light-v11';
+        styleSelect.value = newStyle;
+        if (map) {
+          changeStyle();
+        } else {
+          applySidebarTheme(newStyle);
+        }
+      });
+    }
+
+    function saveToken() {
+      const token = document.getElementById('tokenInput').value.trim();
+      if (token) {
+        localStorage.setItem('mapbox_token', token);
+        document.getElementById('tokenModal').classList.add('hidden');
+        initMap(token);
+      }
+    }
+
+    function initMap(token) {
+      mapboxgl.accessToken = token;
+
+      const region = REGIONS[document.getElementById('region').value];
+      const initialStyle = document.getElementById('mapStyle').value;
+
+      // Apply initial sidebar theme
+      applySidebarTheme(initialStyle);
+
+      // Build style URL based on format
+      let styleUrl;
+      if (initialStyle === 'standard') {
+        styleUrl = 'mapbox://styles/mapbox/standard';
+      } else if (initialStyle.includes('/')) {
+        styleUrl = `mapbox://styles/${initialStyle}`;
+      } else {
+        styleUrl = `mapbox://styles/mapbox/${initialStyle}`;
+      }
+
+      map = new mapboxgl.Map({
+        container: 'map',
+        style: styleUrl,
+        center: region.center,
+        zoom: region.zoom
+      });
+
+      map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      map.addControl(new mapboxgl.ScaleControl(), 'bottom-right');
+
+      popup = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false
+      });
+
+      map.on('load', () => {
+        // Load recycling bin icon
+        loadRecyclingIcon();
+        regenerateData();
+      });
+
+      map.on('zoom', () => {
+        updateStats();
+        checkAutoSwitchMode();
+      });
+      map.on('move', updateStats);
+    }
+
+    function loadMarkerIcons() {
+      const icons = {
+        'recycling-bin': `
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+            <rect x="6" y="10" width="20" height="18" rx="2" fill="#2E7D32" stroke="#1B5E20" stroke-width="1"/>
+            <rect x="4" y="7" width="24" height="4" rx="1" fill="#43A047" stroke="#2E7D32" stroke-width="1"/>
+            <rect x="13" y="4" width="6" height="4" rx="1" fill="#66BB6A"/>
+            <g transform="translate(16, 20)" fill="white">
+              <path d="M-4,-5 L0,-8 L4,-5 L2,-5 L2,-2 L-2,-2 L-2,-5 Z" transform="rotate(0)"/>
+              <path d="M-4,-5 L0,-8 L4,-5 L2,-5 L2,-2 L-2,-2 L-2,-5 Z" transform="rotate(120)"/>
+              <path d="M-4,-5 L0,-8 L4,-5 L2,-5 L2,-2 L-2,-2 L-2,-5 Z" transform="rotate(240)"/>
+            </g>
+          </svg>
+        `,
+        'wastebin': `
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+            <rect x="7" y="10" width="18" height="18" rx="2" fill="#546E7A" stroke="#37474F" stroke-width="1"/>
+            <rect x="5" y="7" width="22" height="4" rx="1" fill="#78909C" stroke="#546E7A" stroke-width="1"/>
+            <rect x="13" y="4" width="6" height="4" rx="1" fill="#90A4AE"/>
+            <line x1="11" y1="14" x2="11" y2="24" stroke="#37474F" stroke-width="1.5"/>
+            <line x1="16" y1="14" x2="16" y2="24" stroke="#37474F" stroke-width="1.5"/>
+            <line x1="21" y1="14" x2="21" y2="24" stroke="#37474F" stroke-width="1.5"/>
+          </svg>
+        `,
+        'poop': `
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+            <ellipse cx="16" cy="26" rx="10" ry="4" fill="#5D4037"/>
+            <ellipse cx="16" cy="20" rx="8" ry="5" fill="#6D4C41"/>
+            <ellipse cx="16" cy="14" rx="6" ry="4" fill="#795548"/>
+            <ellipse cx="16" cy="9" rx="4" ry="3" fill="#8D6E63"/>
+            <circle cx="12" cy="18" r="1.5" fill="#3E2723"/>
+            <circle cx="20" cy="18" r="1.5" fill="#3E2723"/>
+            <path d="M13 22 Q16 24 19 22" stroke="#3E2723" stroke-width="1.5" fill="none"/>
+          </svg>
+        `,
+        'leaf': `
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+            <path d="M16 4 C8 8 6 16 8 24 C10 20 14 18 16 18 C18 18 22 20 24 24 C26 16 24 8 16 4" fill="#4CAF50" stroke="#2E7D32" stroke-width="1"/>
+            <path d="M16 8 L16 24" stroke="#2E7D32" stroke-width="1.5"/>
+            <path d="M16 12 L12 16" stroke="#2E7D32" stroke-width="1"/>
+            <path d="M16 16 L20 20" stroke="#2E7D32" stroke-width="1"/>
+          </svg>
+        `,
+        'pin': `
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+            <path d="M16 2 C10 2 6 7 6 12 C6 20 16 30 16 30 C16 30 26 20 26 12 C26 7 22 2 16 2" fill="#E53935" stroke="#B71C1C" stroke-width="1"/>
+            <circle cx="16" cy="12" r="5" fill="white"/>
+          </svg>
+        `,
+        'factory': `
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+            <rect x="4" y="16" width="24" height="12" fill="#607D8B" stroke="#455A64" stroke-width="1"/>
+            <rect x="6" y="8" width="6" height="20" fill="#78909C"/>
+            <rect x="14" y="12" width="5" height="16" fill="#78909C"/>
+            <rect x="8" y="4" width="2" height="6" fill="#90A4AE"/>
+            <rect x="16" y="6" width="2" height="8" fill="#90A4AE"/>
+            <ellipse cx="9" cy="3" rx="3" ry="2" fill="#B0BEC5" opacity="0.7"/>
+            <ellipse cx="17" cy="5" rx="2.5" ry="1.5" fill="#B0BEC5" opacity="0.7"/>
+            <rect x="7" y="20" width="3" height="4" fill="#FFC107"/>
+            <rect x="14" y="20" width="3" height="4" fill="#FFC107"/>
+            <rect x="21" y="20" width="3" height="4" fill="#FFC107"/>
+          </svg>
+        `
+      };
+
+      Object.entries(icons).forEach(([name, svgString]) => {
+        const img = new Image(32, 32);
+        img.onload = () => {
+          if (!map.hasImage(name)) {
+            map.addImage(name, img);
+            console.log(`Icon loaded: ${name}`);
+          }
+        };
+        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString.trim());
+      });
+    }
+
+    // Keep old function name for compatibility
+    function loadRecyclingIcon() {
+      loadMarkerIcons();
+    }
+
+    // =========================================
+    // DATA GENERATION
+    // =========================================
+    // Texas metro areas for multi-city distribution
+    const TEXAS_METROS = [
+      { name: 'Houston', center: [-95.3698, 29.7604], weight: 0.35, spread: 0.4 },
+      { name: 'Dallas-Fort Worth', center: [-96.7970, 32.7767], weight: 0.30, spread: 0.5 },
+      { name: 'San Antonio', center: [-98.4936, 29.4241], weight: 0.18, spread: 0.25 },
+      { name: 'Austin', center: [-97.7431, 30.2672], weight: 0.17, spread: 0.2 }
+    ];
+
+    function generateData(count, distribution, region) {
+      const r = REGIONS[region];
+      const data = [];
+
+      // For Texas-wide view, distribute across all metros
+      const isTexasWide = region === 'texas';
+      const spread = isTexasWide ? 0.3 : (region === 'dallas' ? 0.35 : 0.25);
+
+      for (let i = 0; i < count; i++) {
+        let lng, lat, metro = null;
+
+        // For Texas-wide, pick a metro based on population weights
+        if (isTexasWide) {
+          const rand = Math.random();
+          let cumulative = 0;
+          for (const m of TEXAS_METROS) {
+            cumulative += m.weight;
+            if (rand < cumulative) {
+              metro = m;
+              break;
+            }
+          }
+        }
+
+        const baseCenter = metro ? metro.center : r.center;
+        const baseSpread = metro ? metro.spread : spread;
+
+        switch (distribution) {
+          case 'clustered':
+            // Create neighborhood clusters within the metro
+            const clusterCount = 6 + Math.floor(Math.random() * 4);
+            const clusterOffset = [
+              (Math.random() - 0.5) * baseSpread,
+              (Math.random() - 0.5) * baseSpread
+            ];
+            // Tighter clustering around cluster centers
+            lng = baseCenter[0] + clusterOffset[0] + (Math.random() - 0.5) * baseSpread * 0.15;
+            lat = baseCenter[1] + clusterOffset[1] + (Math.random() - 0.5) * baseSpread * 0.15;
+            break;
+
+          case 'uniform':
+            lng = baseCenter[0] + (Math.random() - 0.5) * baseSpread * 2;
+            lat = baseCenter[1] + (Math.random() - 0.5) * baseSpread * 2;
+            break;
+
+          case 'route':
+            // Points along highways/corridors
+            if (isTexasWide) {
+              // I-35 corridor (San Antonio -> Austin -> Dallas)
+              const t = Math.random();
+              const i35Noise = (Math.random() - 0.5) * 0.15;
+              if (t < 0.4) {
+                // SA to Austin segment
+                lng = -98.4936 + (t / 0.4) * 0.75 + i35Noise;
+                lat = 29.4241 + (t / 0.4) * 0.85 + i35Noise * 0.5;
+              } else {
+                // Austin to Dallas segment
+                const t2 = (t - 0.4) / 0.6;
+                lng = -97.7431 + t2 * 0.95 + i35Noise;
+                lat = 30.2672 + t2 * 2.5 + i35Noise * 0.5;
+              }
+            } else {
+              // Radial highways from city center
+              const angle = Math.random() * Math.PI * 2;
+              const dist = Math.random() * baseSpread;
+              const noise = (Math.random() - 0.5) * 0.02;
+              lng = baseCenter[0] + Math.cos(angle) * dist + noise;
+              lat = baseCenter[1] + Math.sin(angle) * dist + noise;
+            }
+            break;
+
+          case 'coastal':
+            if (region === 'houston' || isTexasWide) {
+              // Houston: concentrate toward Gulf Coast / Ship Channel
+              const coastBias = Math.random() * 0.7;
+              lng = (metro || r).center[0] + coastBias * 0.5 + (Math.random() - 0.5) * 0.2;
+              lat = (metro || r).center[1] - coastBias * 0.3 + (Math.random() - 0.5) * 0.15;
+            } else {
+              // Other cities: ring pattern (loop highways)
+              const angle = Math.random() * Math.PI * 2;
+              const dist = 0.08 + Math.random() * 0.12;
+              lng = baseCenter[0] + Math.cos(angle) * dist;
+              lat = baseCenter[1] + Math.sin(angle) * dist;
+            }
+            break;
+        }
+
+        data.push({
+          id: i,
+          lng: lng,
+          lat: lat,
+          value: Math.random() * 100,
+          category: ['Restaurant', 'Shop', 'Office', 'Park', 'Transit'][Math.floor(Math.random() * 5)],
+          metro: metro ? metro.name : r.name,
+          recyclingVolume: Math.floor(Math.random() * 10) + 1  // 1-10 tons/month
+        });
+      }
+
+      return data;
+    }
+
+    function regenerateData() {
+      const count = parseInt(document.getElementById('pointCount').value);
+      const distribution = document.getElementById('distribution').value;
+      const region = document.getElementById('region').value;
+
+      currentData = generateData(count, distribution, region);
+      updateDataSource();
+      updateStats();
+    }
+
+    function updateDataSource() {
+      if (!map || !map.isStyleLoaded()) return;
+
+      // Store GeoJSON for mode switching
+      currentGeoJSON = {
+        type: 'FeatureCollection',
+        features: currentData.map(d => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [d.lng, d.lat] },
+          properties: {
+            id: d.id,
+            value: d.value,
+            category: d.category,
+            metro: d.metro,
+            recyclingVolume: d.recyclingVolume
+          }
+        }))
+      };
+
+      // Remove existing layers and source
+      removeAllLayers();
+
+      // Add source with appropriate clustering based on mode
+      const useCluster = currentMode === 'clusters';
+
+      map.addSource('points', {
+        type: 'geojson',
+        data: currentGeoJSON,
+        cluster: useCluster,
+        clusterMaxZoom: parseInt(document.getElementById('clusterMaxZoom').value),
+        clusterRadius: parseInt(document.getElementById('clusterRadius').value)
+      });
+
+      addLayers();
+      document.getElementById('statPoints').textContent = currentData.length;
+    }
+
+    function removeAllLayers() {
+      const layers = ['clusters', 'clusters-glow', 'cluster-count', 'unclustered-point', 'unclustered-point-glow', 'heatmap', 'markers', 'markers-labels'];
+      layers.forEach(id => {
+        if (map.getLayer(id)) map.removeLayer(id);
+      });
+      if (map.getSource('points')) map.removeSource('points');
+    }
+
+    // =========================================
+    // LAYERS
+    // =========================================
+    function addLayers() {
+      const primary = document.getElementById('primaryColor').value;
+      const secondary = document.getElementById('secondaryColor').value;
+
+      if (currentMode === 'clusters') {
+        // Determine size expression based on metric
+        const sizeSteps = clusterSizeMetric === 'weight'
+          ? [18, 20, 24, 50, 32, 100, 40]   // weight thresholds: 20t, 50t, 100t
+          : [18, 10, 24, 50, 32, 100, 40];  // count thresholds: 10, 50, 100
+
+        // Use coalesce for totalWeight to handle initial load
+        const sizeValue = clusterSizeMetric === 'weight'
+          ? ['coalesce', ['get', 'totalWeight'], ['*', ['get', 'point_count'], 5]]
+          : ['get', 'point_count'];
+
+        // Determine color expression based on metric
+        // For color, we can use average weight (totalWeight / point_count) or just count
+        let colorExpression;
+        if (clusterColorMetric === 'weight') {
+          // Color by average weight per location
+          // Use coalesce to handle cases where totalWeight isn't ready yet
+          colorExpression = [
+            'interpolate', ['linear'],
+            ['/',
+              ['coalesce', ['get', 'totalWeight'], ['*', ['get', 'point_count'], 5]], // fallback: assume 5 tons avg
+              ['get', 'point_count']
+            ],
+            1, primary,      // 1 ton avg = primary
+            5, mixColors(primary, secondary, 0.5),  // 5 tons avg = mid
+            10, secondary    // 10 tons avg = secondary
+          ];
+        } else {
+          // Color by count
+          colorExpression = [
+            'step', ['get', 'point_count'],
+            primary, 10,
+            mixColors(primary, secondary, 0.3), 50,
+            mixColors(primary, secondary, 0.6), 100,
+            secondary
+          ];
+        }
+
+        // Cluster circles
+        const clusterOpacity = parseFloat(document.getElementById('clusterOpacity').value);
+
+        // Cluster glow layer (renders behind main clusters)
+        map.addLayer({
+          id: 'clusters-glow',
+          type: 'circle',
+          source: 'points',
+          filter: ['has', 'point_count'],
+          paint: {
+            'circle-color': colorExpression,
+            'circle-radius': [
+              'step', sizeValue,
+              ...sizeSteps.map((v, i) => i % 2 === 0 ? v + 18 : v) // Larger radius for glow
+            ],
+            'circle-opacity': clusterOpacity * 0.5,
+            'circle-blur': 0.8
+          }
+        });
+
+        // Main cluster circles
+        map.addLayer({
+          id: 'clusters',
+          type: 'circle',
+          source: 'points',
+          filter: ['has', 'point_count'],
+          paint: {
+            'circle-color': colorExpression,
+            'circle-radius': [
+              'step', sizeValue,
+              ...sizeSteps
+            ],
+            'circle-opacity': clusterOpacity,
+            'circle-stroke-width': 2,
+            'circle-stroke-color': 'rgba(255,255,255,0.6)'
+          }
+        });
+
+        // Cluster labels - show both count and weight
+        map.addLayer({
+          id: 'cluster-count',
+          type: 'symbol',
+          source: 'points',
+          filter: ['has', 'point_count'],
+          layout: {
+            'text-field': [
+              'concat',
+              ['get', 'point_count'], ' · ',
+              ['number-format',
+                ['coalesce', ['get', 'totalWeight'], ['*', ['get', 'point_count'], 5]],
+                { 'max-fraction-digits': 0 }
+              ], 't'
+            ],
+            'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+            'text-size': 11
+          },
+          paint: {
+            'text-color': '#fff'
+          }
+        });
+
+        // Unclustered point glow
+        map.addLayer({
+          id: 'unclustered-point-glow',
+          type: 'circle',
+          source: 'points',
+          filter: ['!', ['has', 'point_count']],
+          paint: {
+            'circle-color': primary,
+            'circle-radius': [
+              'interpolate', ['linear'], ['get', 'recyclingVolume'],
+              1, 12,
+              10, 22
+            ],
+            'circle-opacity': clusterOpacity * 0.4,
+            'circle-blur': 0.8
+          }
+        });
+
+        // Unclustered points (shown at high zoom when clusters break apart)
+        map.addLayer({
+          id: 'unclustered-point',
+          type: 'circle',
+          source: 'points',
+          filter: ['!', ['has', 'point_count']],
+          paint: {
+            'circle-color': primary,
+            'circle-radius': [
+              'interpolate', ['linear'], ['get', 'recyclingVolume'],
+              1, 4,
+              10, 10
+            ],
+            'circle-opacity': clusterOpacity,
+            'circle-stroke-width': 2,
+            'circle-stroke-color': 'rgba(255,255,255,0.6)'
+          }
+        });
+
+      } else if (currentMode === 'heatmap') {
+        // Heatmap layer
+        const intensity = parseFloat(document.getElementById('heatIntensity').value);
+        const radius = parseInt(document.getElementById('heatRadius').value);
+        const opacity = parseFloat(document.getElementById('heatOpacity').value);
+
+        // Weight by recycling volume or count (1)
+        const weightExpression = heatMetric === 'weight'
+          ? ['interpolate', ['linear'], ['get', 'recyclingVolume'], 1, 0.1, 10, 1]
+          : 1;
+
+        map.addLayer({
+          id: 'heatmap',
+          type: 'heatmap',
+          source: 'points',
+          paint: {
+            'heatmap-weight': weightExpression,
+            'heatmap-intensity': intensity,
+            'heatmap-color': [
+              'interpolate',
+              ['linear'],
+              ['heatmap-density'],
+              0, 'rgba(0,0,255,0)',
+              0.1, 'royalblue',
+              0.3, 'cyan',
+              0.5, 'lime',
+              0.7, 'yellow',
+              1, 'red'
+            ],
+            'heatmap-radius': radius,
+            'heatmap-opacity': opacity
+          }
+        });
+
+        console.log('Heatmap layer added:', { intensity, radius, opacity, metric: heatMetric });
+
+      } else if (currentMode === 'markers') {
+        // Individual markers with selected icon
+        const iconSizeExpr = scaleByVolume
+          ? [
+              'interpolate', ['linear'], ['get', 'recyclingVolume'],
+              1, markerBaseSize * 0.7,
+              5, markerBaseSize,
+              10, markerBaseSize * 1.4
+            ]
+          : markerBaseSize;
+
+        map.addLayer({
+          id: 'markers',
+          type: 'symbol',
+          source: 'points',
+          layout: {
+            'icon-image': currentMarkerIcon,
+            'icon-size': iconSizeExpr,
+            'icon-allow-overlap': true,
+            'icon-anchor': 'bottom'
+          }
+        });
+
+        // Add volume labels below icons at higher zoom
+        map.addLayer({
+          id: 'markers-labels',
+          type: 'symbol',
+          source: 'points',
+          minzoom: 12,
+          layout: {
+            'text-field': ['concat', ['get', 'recyclingVolume'], 't'],
+            'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+            'text-size': 10,
+            'text-offset': [0, 0.8],
+            'text-anchor': 'top'
+          },
+          paint: {
+            'text-color': '#1B5E20',
+            'text-halo-color': '#fff',
+            'text-halo-width': 1.5
+          }
+        });
+      }
+
+      setupLayerInteractions();
+      updateLegend();
+    }
+
+    // =========================================
+    // MODE SWITCHING
+    // =========================================
+    const AUTO_SWITCH_ZOOM_THRESHOLD = 8.0;
+    let autoSwitchedToCluster = false;  // Track if we auto-switched
+
+    function checkAutoSwitchMode() {
+      if (!map) return;
+
+      const zoom = map.getZoom();
+
+      // Auto-switch from markers to clusters when zooming out
+      if (currentMode === 'markers' && zoom < AUTO_SWITCH_ZOOM_THRESHOLD) {
+        autoSwitchedToCluster = true;
+        setMode('clusters', true);
+        showAutoSwitchNotice('Switched to Clusters (zoom < 8)');
+      }
+      // Auto-switch back to markers when zooming in (if we auto-switched before)
+      else if (autoSwitchedToCluster && currentMode === 'clusters' && zoom >= AUTO_SWITCH_ZOOM_THRESHOLD) {
+        autoSwitchedToCluster = false;
+        setMode('markers', true);
+        showAutoSwitchNotice('Switched to Markers (zoom ≥ 8)');
+      }
+    }
+
+    function showAutoSwitchNotice(message) {
+      // Create or update notice element
+      let notice = document.getElementById('auto-switch-notice');
+      if (!notice) {
+        notice = document.createElement('div');
+        notice.id = 'auto-switch-notice';
+        notice.style.cssText = `
+          position: absolute;
+          top: 60px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: var(--overlay-bg, rgba(0,0,0,0.8));
+          color: var(--overlay-text, white);
+          padding: 8px 16px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 500;
+          z-index: 100;
+          opacity: 0;
+          transition: opacity 0.3s;
+          pointer-events: none;
+        `;
+        document.querySelector('.map-container').appendChild(notice);
+      }
+
+      notice.textContent = message;
+      notice.style.opacity = '1';
+
+      // Fade out after 2 seconds
+      setTimeout(() => {
+        notice.style.opacity = '0';
+      }, 2000);
+    }
+
+    function setMode(mode, isAutoSwitch = false) {
+      const prevMode = currentMode;
+      currentMode = mode;
+
+      // Reset auto-switch tracking if user manually changed mode
+      if (!isAutoSwitch) {
+        autoSwitchedToCluster = false;
+      }
+
+      // Update map mode selector buttons
+      document.querySelectorAll('.map-mode-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+      });
+
+      // Show/hide settings panels based on mode
+      document.getElementById('clusterSettings').classList.toggle('hidden', mode !== 'clusters');
+      document.getElementById('heatmapSettings').classList.toggle('hidden', mode !== 'heatmap');
+      document.getElementById('markersSettings').classList.toggle('hidden', mode !== 'markers');
+
+      // Rebuild layers if we have data
+      if (map && currentGeoJSON) {
+        rebuildForMode();
+      }
+    }
+
+    function rebuildForMode() {
+      if (!map || !map.isStyleLoaded() || !currentGeoJSON) return;
+
+      // Remove existing layers and source
+      removeAllLayers();
+
+      // Get filtered data based on volume filter
+      const filteredData = getFilteredGeoJSON();
+
+      // Add source - only cluster for clusters mode
+      const useCluster = currentMode === 'clusters';
+
+      const sourceConfig = {
+        type: 'geojson',
+        data: filteredData,
+        cluster: useCluster,
+        clusterMaxZoom: parseInt(document.getElementById('clusterMaxZoom').value),
+        clusterRadius: parseInt(document.getElementById('clusterRadius').value)
+      };
+
+      // Add cluster aggregation properties when clustering
+      if (useCluster) {
+        sourceConfig.clusterProperties = {
+          // Sum of recycling volume for all points in cluster
+          totalWeight: ['+', ['get', 'recyclingVolume']],
+          // For calculating average, we need sum and count
+          // count is automatic via point_count
+        };
+      }
+
+      map.addSource('points', sourceConfig);
+
+      addLayers();
+    }
+
+    function updateLegend() {
+      const legend = document.getElementById('legend');
+      const primary = document.getElementById('primaryColor').value;
+      const secondary = document.getElementById('secondaryColor').value;
+
+      let html = '';
+
+      // Filter indicator
+      const volumeLabels = {
+        'all': 'All volumes',
+        'small': '1-3t',
+        'medium': '4-6t',
+        'large': '7-10t'
+      };
+
+      const activeFilters = [];
+      if (categoryFilter !== 'all') activeFilters.push(categoryFilter);
+      if (volumeFilter !== 'all') activeFilters.push(volumeLabels[volumeFilter]);
+
+      const filterHtml = activeFilters.length > 0
+        ? `<div class="legend-section" style="background: #f0f9ff; margin: -12px -16px 10px -16px; padding: 8px 16px; border-radius: 8px 8px 0 0;">
+            <div class="legend-text" style="color: #0369a1; font-weight: 500;">🔍 ${activeFilters.join(' + ')}</div>
+           </div>`
+        : '';
+
+      if (currentMode === 'clusters') {
+        html = `
+          ${filterHtml}
+          <div class="legend-title">Clusters</div>
+          <div class="legend-section">
+            <div class="legend-label">Size: ${clusterSizeMetric === 'weight' ? 'Total Weight' : 'Location Count'}</div>
+            <div class="legend-row">
+              <div class="legend-circle" style="width: 14px; height: 14px; background: ${primary};"></div>
+              <span class="legend-text">${clusterSizeMetric === 'weight' ? '< 20 tons' : '< 10 locations'}</span>
+            </div>
+            <div class="legend-row">
+              <div class="legend-circle" style="width: 20px; height: 20px; background: ${primary};"></div>
+              <span class="legend-text">${clusterSizeMetric === 'weight' ? '20-50 tons' : '10-50 locations'}</span>
+            </div>
+            <div class="legend-row">
+              <div class="legend-circle" style="width: 28px; height: 28px; background: ${primary};"></div>
+              <span class="legend-text">${clusterSizeMetric === 'weight' ? '> 100 tons' : '> 100 locations'}</span>
+            </div>
+          </div>
+          <div class="legend-section">
+            <div class="legend-label">Color: ${clusterColorMetric === 'weight' ? 'Avg Weight/Location' : 'Location Count'}</div>
+            <div class="legend-gradient" style="background: linear-gradient(to right, ${primary}, ${secondary});"></div>
+            <div class="legend-gradient-labels">
+              <span>${clusterColorMetric === 'weight' ? '1 ton' : 'Few'}</span>
+              <span>${clusterColorMetric === 'weight' ? '10 tons' : 'Many'}</span>
+            </div>
+          </div>
+          <div class="legend-section">
+            <div class="legend-label">Label Format</div>
+            <div class="legend-text" style="font-size: 10px; color: #888;">count · total weight</div>
+            <div class="legend-text" style="font-family: monospace;">42 · 156t</div>
+          </div>
+        `;
+      } else if (currentMode === 'heatmap') {
+        html = `
+          ${filterHtml}
+          <div class="legend-title">Heatmap</div>
+          <div class="legend-section">
+            <div class="legend-label">${heatMetric === 'weight' ? 'Total Weight Density' : 'Location Density'}</div>
+            <div class="legend-gradient" style="background: linear-gradient(to right, rgba(0,0,255,0.3), cyan, lime, yellow, red);"></div>
+            <div class="legend-gradient-labels">
+              <span>Low</span>
+              <span>High</span>
+            </div>
+          </div>
+          <div class="legend-section">
+            <div class="legend-text" style="font-size: 10px; color: #666;">
+              ${heatMetric === 'weight'
+                ? 'Intensity weighted by recycling volume (tons/month)'
+                : 'Each location weighted equally'}
+            </div>
+          </div>
+        `;
+      } else if (currentMode === 'markers') {
+        const iconEmojis = {
+          'recycling-bin': '♻️',
+          'wastebin': '🗑️',
+          'poop': '💩',
+          'leaf': '🌿',
+          'pin': '📍',
+          'factory': '🏭'
+        };
+        const currentEmoji = iconEmojis[currentMarkerIcon] || '📍';
+
+        html = `
+          ${filterHtml}
+          <div class="legend-title">Locations</div>
+          <div class="legend-section">
+            <div class="legend-label">Volume (tons/month)</div>
+            ${scaleByVolume ? `
+              <div class="legend-row">
+                <span class="legend-icon" style="font-size: 12px;">${currentEmoji}</span>
+                <span class="legend-text">1-3 tons (small)</span>
+              </div>
+              <div class="legend-row">
+                <span class="legend-icon" style="font-size: 16px;">${currentEmoji}</span>
+                <span class="legend-text">4-6 tons (medium)</span>
+              </div>
+              <div class="legend-row">
+                <span class="legend-icon" style="font-size: 20px;">${currentEmoji}</span>
+                <span class="legend-text">7-10 tons (large)</span>
+              </div>
+            ` : `
+              <div class="legend-row">
+                <span class="legend-icon" style="font-size: 16px;">${currentEmoji}</span>
+                <span class="legend-text">All locations (uniform size)</span>
+              </div>
+            `}
+          </div>
+          <div class="legend-section">
+            <div class="legend-text" style="font-size: 10px; color: #666;">
+              Labels show volume at zoom 12+
+            </div>
+          </div>
+        `;
+      }
+
+      legend.innerHTML = html;
+    }
+
+    function setupLayerInteractions() {
+      // Cluster click to zoom
+      if (map.getLayer('clusters')) {
+        map.on('click', 'clusters', (e) => {
+          const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
+          if (!features.length) return;
+          const clusterId = features[0].properties.cluster_id;
+
+          map.getSource('points').getClusterExpansionZoom(clusterId, (err, zoom) => {
+            if (err) return;
+            map.easeTo({
+              center: features[0].geometry.coordinates,
+              zoom: zoom
+            });
+          });
+        });
+
+        map.on('mouseenter', 'clusters', () => {
+          map.getCanvas().style.cursor = 'pointer';
+        });
+
+        map.on('mouseleave', 'clusters', () => {
+          map.getCanvas().style.cursor = '';
+        });
+      }
+
+      // Point hover for unclustered-point or markers
+      const pointLayer = map.getLayer('unclustered-point') ? 'unclustered-point' :
+                         map.getLayer('markers') ? 'markers' : null;
+
+      if (pointLayer) {
+        map.on('mouseenter', pointLayer, (e) => {
+          map.getCanvas().style.cursor = 'pointer';
+          const coords = e.features[0].geometry.coordinates.slice();
+          const props = e.features[0].properties;
+
+          popup.setLngLat(coords)
+            .setHTML(`
+              <div class="popup-title">${props.category}</div>
+              <div class="popup-detail">${props.metro}</div>
+              <div class="popup-detail">♻️ <strong>${props.recyclingVolume} tons</strong>/month</div>
+            `)
+            .addTo(map);
+        });
+
+        map.on('mouseleave', pointLayer, () => {
+          map.getCanvas().style.cursor = '';
+          popup.remove();
+        });
+      }
+    }
+
+    // =========================================
+    // SIDEBAR TOGGLE
+    // =========================================
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const toggle = document.getElementById('sidebarToggle');
+
+      sidebar.classList.toggle('collapsed');
+
+      const isCollapsed = sidebar.classList.contains('collapsed');
+
+      if (toggle) {
+        toggle.classList.toggle('collapsed', isCollapsed);
+      }
+
+      // Resize map after transition completes
+      setTimeout(() => {
+        if (map) {
+          map.resize();
+        }
+      }, 350);
+    }
+
+    // =========================================
+    // DATA PANEL
+    // =========================================
+    function toggleDataPanel() {
+      const panel = document.getElementById('dataPanel');
+      const toggle = document.getElementById('dataPanelToggle');
+      const modeSelector = document.querySelector('.map-mode-selector');
+
+      panel.classList.toggle('open');
+
+      const isOpen = panel.classList.contains('open');
+
+      // Toggle button state
+      if (toggle) {
+        toggle.classList.toggle('open', isOpen);
+      }
+
+      // Shift mode selector when panel opens
+      if (modeSelector) {
+        modeSelector.classList.toggle('panel-open', isOpen);
+      }
+
+      // Resize map after transition completes
+      setTimeout(() => {
+        if (map) {
+          map.resize();
+        }
+      }, 350);
+    }
+
+    // =========================================
+    // CONTROLS
+    // =========================================
+    function updatePointCount(value) {
+      document.getElementById('pointCountValue').textContent = value;
+    }
+
+    // Category filter control
+    function setCategoryFilter(filter) {
+      categoryFilter = filter;
+      document.querySelectorAll('[data-category]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.category === filter);
+      });
+      if (map && currentGeoJSON) {
+        rebuildForMode();
+      }
+    }
+
+    // Volume filter control
+    function setVolumeFilter(filter) {
+      volumeFilter = filter;
+      document.querySelectorAll('[data-volume]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.volume === filter);
+      });
+      if (map && currentGeoJSON) {
+        rebuildForMode();
+      }
+    }
+
+    function getFilteredGeoJSON() {
+      if (!currentGeoJSON) return null;
+
+      let features = currentGeoJSON.features;
+
+      // Apply category filter
+      if (categoryFilter !== 'all') {
+        features = features.filter(f => f.properties.category === categoryFilter);
+      }
+
+      // Apply volume filter
+      if (volumeFilter !== 'all') {
+        let min, max;
+        switch (volumeFilter) {
+          case 'small':  min = 1; max = 3; break;
+          case 'medium': min = 4; max = 6; break;
+          case 'large':  min = 7; max = 10; break;
+          default: min = 1; max = 10;
+        }
+        features = features.filter(f =>
+          f.properties.recyclingVolume >= min && f.properties.recyclingVolume <= max
+        );
+      }
+
+      updateFilteredCount(features.length);
+
+      return {
+        type: 'FeatureCollection',
+        features: features
+      };
+    }
+
+    function updateFilteredCount(count) {
+      // Update count in data panel
+      const panelCount = document.getElementById('filteredCountPanel');
+      if (panelCount) panelCount.textContent = count;
+    }
+
+    // Cluster metric controls
+    function setClusterSizeMetric(metric) {
+      clusterSizeMetric = metric;
+      document.querySelectorAll('[data-size-metric]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.sizeMetric === metric);
+      });
+      if (map && currentGeoJSON && currentMode === 'clusters') {
+        rebuildForMode();
+      }
+    }
+
+    function setClusterColorMetric(metric) {
+      clusterColorMetric = metric;
+      document.querySelectorAll('[data-color-metric]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.colorMetric === metric);
+      });
+      if (map && currentGeoJSON && currentMode === 'clusters') {
+        rebuildForMode();
+      }
+    }
+
+    // Heatmap metric control
+    function setHeatMetric(metric) {
+      heatMetric = metric;
+      document.querySelectorAll('[data-heat-metric]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.heatMetric === metric);
+      });
+      if (map && currentGeoJSON && currentMode === 'heatmap') {
+        rebuildForMode();
+      }
+    }
+
+    function updateClusterRadius(value) {
+      document.getElementById('clusterRadiusValue').textContent = value;
+      if (map && currentGeoJSON) {
+        rebuildForMode();
+      }
+    }
+
+    function updateClusterMaxZoom(value) {
+      document.getElementById('clusterMaxZoomValue').textContent = value;
+      if (map && currentGeoJSON) {
+        rebuildForMode();
+      }
+    }
+
+    function updateClusterOpacity(value) {
+      document.getElementById('clusterOpacityValue').textContent = value;
+      const opacity = parseFloat(value);
+
+      if (map) {
+        if (map.getLayer('clusters')) {
+          map.setPaintProperty('clusters', 'circle-opacity', opacity);
+        }
+        if (map.getLayer('clusters-glow')) {
+          map.setPaintProperty('clusters-glow', 'circle-opacity', opacity * 0.5);
+        }
+        if (map.getLayer('unclustered-point')) {
+          map.setPaintProperty('unclustered-point', 'circle-opacity', opacity);
+        }
+        if (map.getLayer('unclustered-point-glow')) {
+          map.setPaintProperty('unclustered-point-glow', 'circle-opacity', opacity * 0.4);
+        }
+      }
+    }
+
+    // Marker controls
+    function setMarkerIcon(icon) {
+      currentMarkerIcon = icon;
+      document.querySelectorAll('.icon-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.icon === icon);
+      });
+      if (map && currentGeoJSON && currentMode === 'markers') {
+        rebuildForMode();
+      }
+    }
+
+    function updateMarkerSize(value) {
+      document.getElementById('markerSizeValue').textContent = value;
+      markerBaseSize = parseFloat(value);
+      if (map && currentGeoJSON && currentMode === 'markers') {
+        rebuildForMode();
+      }
+    }
+
+    function updateMarkerScaling() {
+      scaleByVolume = document.getElementById('scaleByVolume').checked;
+      if (map && currentGeoJSON && currentMode === 'markers') {
+        rebuildForMode();
+      }
+    }
+
+    function updateHeatmap() {
+      const intensity = parseFloat(document.getElementById('heatIntensity').value);
+      const radius = parseInt(document.getElementById('heatRadius').value);
+      const opacity = parseFloat(document.getElementById('heatOpacity').value);
+
+      document.getElementById('heatIntensityValue').textContent = intensity;
+      document.getElementById('heatRadiusValue').textContent = radius;
+      document.getElementById('heatOpacityValue').textContent = opacity;
+
+      if (map && map.getLayer('heatmap')) {
+        map.setPaintProperty('heatmap', 'heatmap-intensity', intensity);
+        map.setPaintProperty('heatmap', 'heatmap-radius', radius);
+        map.setPaintProperty('heatmap', 'heatmap-opacity', opacity);
+      }
+    }
+
+    function updateColors() {
+      const primary = document.getElementById('primaryColor').value;
+      const secondary = document.getElementById('secondaryColor').value;
+
+      document.getElementById('primaryColorHex').textContent = primary;
+      document.getElementById('secondaryColorHex').textContent = secondary;
+
+      if (!map) return;
+
+      // Update cluster layers if they exist
+      if (map.getLayer('clusters')) {
+        map.setPaintProperty('clusters', 'circle-color', [
+          'step', ['get', 'point_count'],
+          primary, 10,
+          mixColors(primary, secondary, 0.3), 50,
+          mixColors(primary, secondary, 0.6), 100,
+          secondary
+        ]);
+      }
+
+      if (map.getLayer('unclustered-point')) {
+        map.setPaintProperty('unclustered-point', 'circle-color', primary);
+      }
+
+      // Update heatmap if it exists
+      if (map.getLayer('heatmap')) {
+        map.setPaintProperty('heatmap', 'heatmap-color', [
+          'interpolate', ['linear'], ['heatmap-density'],
+          0, 'rgba(0,0,0,0)',
+          0.2, primary + '40',
+          0.4, primary + '80',
+          0.6, mixColors(primary, secondary, 0.5),
+          0.8, secondary + 'cc',
+          1, secondary
+        ]);
+      }
+
+      // Update legend to reflect new colors
+      updateLegend();
+    }
+
+    function changeStyle() {
+      const style = document.getElementById('mapStyle').value;
+
+      // Apply sidebar theme based on map style
+      applySidebarTheme(style);
+
+      // Handle different style formats
+      if (style === 'standard') {
+        map.setStyle('mapbox://styles/mapbox/standard');
+      } else if (style.includes('/')) {
+        // Custom style with username/styleId format
+        map.setStyle(`mapbox://styles/${style}`);
+      } else {
+        map.setStyle(`mapbox://styles/mapbox/${style}`);
+      }
+
+      // Wait for style to fully load before rebuilding layers
+      const rebuildAfterStyleLoad = () => {
+        // Reload custom icons (cleared on style change)
+        loadRecyclingIcon();
+
+        // Small delay to ensure icon is loaded before rebuilding layers
+        setTimeout(() => {
+          if (currentGeoJSON) {
+            rebuildForMode();
+          }
+          // Re-apply 3D features if enabled
+          if (document.getElementById('show3DBuildings').checked) {
+            add3DBuildings();
+          }
+          if (document.getElementById('show3DTerrain').checked) {
+            add3DTerrain();
+          }
+        }, 150);
+      };
+
+      // Use 'idle' event which fires after style is fully loaded and rendered
+      map.once('idle', rebuildAfterStyleLoad);
+    }
+
+    function applySidebarTheme(style) {
+      // Using unified tech theme - no longer need to change themes based on map style
+      // Function kept for backwards compatibility with existing calls
+    }
+
+    // =========================================
+    // 3D CONTROLS
+    // =========================================
+    function updatePitch(value) {
+      document.getElementById('pitchValue').textContent = value;
+      if (map) {
+        map.easeTo({ pitch: parseFloat(value), duration: 300 });
+      }
+    }
+
+    function updateBearing(value) {
+      document.getElementById('bearingValue').textContent = value;
+      if (map) {
+        map.easeTo({ bearing: parseFloat(value), duration: 300 });
+      }
+    }
+
+    function toggle3DBuildings() {
+      const show = document.getElementById('show3DBuildings').checked;
+      if (show) {
+        add3DBuildings();
+        // Set a nice pitch if currently flat
+        if (map.getPitch() < 30) {
+          map.easeTo({ pitch: 45, duration: 500 });
+          document.getElementById('pitch').value = 45;
+          document.getElementById('pitchValue').textContent = '45';
+        }
+      } else {
+        remove3DBuildings();
+      }
+    }
+
+    function add3DBuildings() {
+      if (!map || map.getLayer('3d-buildings')) return;
+
+      // Find the first symbol layer to insert buildings below labels
+      const layers = map.getStyle().layers;
+      let labelLayerId;
+      for (const layer of layers) {
+        if (layer.type === 'symbol' && layer.layout['text-field']) {
+          labelLayerId = layer.id;
+          break;
+        }
+      }
+
+      map.addLayer({
+        id: '3d-buildings',
+        source: 'composite',
+        'source-layer': 'building',
+        filter: ['==', 'extrude', 'true'],
+        type: 'fill-extrusion',
+        minzoom: 12,
+        paint: {
+          'fill-extrusion-color': [
+            'interpolate',
+            ['linear'],
+            ['get', 'height'],
+            0, '#e0e0e0',
+            50, '#c0c0c0',
+            100, '#a0a0a0',
+            200, '#808080'
+          ],
+          'fill-extrusion-height': ['get', 'height'],
+          'fill-extrusion-base': ['get', 'min_height'],
+          'fill-extrusion-opacity': 0.8
+        }
+      }, labelLayerId);
+
+      console.log('3D buildings layer added');
+    }
+
+    function remove3DBuildings() {
+      if (map && map.getLayer('3d-buildings')) {
+        map.removeLayer('3d-buildings');
+        console.log('3D buildings layer removed');
+      }
+    }
+
+    function toggle3DTerrain() {
+      const show = document.getElementById('show3DTerrain').checked;
+      if (show) {
+        add3DTerrain();
+        document.getElementById('terrainExaggeration').style.display = 'block';
+        // Set a nice pitch if currently flat
+        if (map.getPitch() < 30) {
+          map.easeTo({ pitch: 50, duration: 500 });
+          document.getElementById('pitch').value = 50;
+          document.getElementById('pitchValue').textContent = '50';
+        }
+      } else {
+        remove3DTerrain();
+        document.getElementById('terrainExaggeration').style.display = 'none';
+      }
+    }
+
+    function add3DTerrain() {
+      if (!map) return;
+
+      // Add terrain source if not present
+      if (!map.getSource('mapbox-dem')) {
+        map.addSource('mapbox-dem', {
+          type: 'raster-dem',
+          url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+          tileSize: 512,
+          maxzoom: 14
+        });
+      }
+
+      // Enable terrain
+      map.setTerrain({
+        source: 'mapbox-dem',
+        exaggeration: parseFloat(document.getElementById('exaggeration').value)
+      });
+
+      // Add sky layer for nice horizon
+      if (!map.getLayer('sky')) {
+        map.addLayer({
+          id: 'sky',
+          type: 'sky',
+          paint: {
+            'sky-type': 'atmosphere',
+            'sky-atmosphere-sun': [0.0, 90.0],
+            'sky-atmosphere-sun-intensity': 15
+          }
+        });
+      }
+
+      console.log('3D terrain enabled');
+    }
+
+    function remove3DTerrain() {
+      if (!map) return;
+
+      map.setTerrain(null);
+
+      if (map.getLayer('sky')) {
+        map.removeLayer('sky');
+      }
+
+      console.log('3D terrain disabled');
+    }
+
+    function updateExaggeration(value) {
+      document.getElementById('exaggerationValue').textContent = value;
+      if (map && map.getTerrain()) {
+        map.setTerrain({
+          source: 'mapbox-dem',
+          exaggeration: parseFloat(value)
+        });
+      }
+    }
+
+    function changeRegion() {
+      const region = REGIONS[document.getElementById('region').value];
+      map.flyTo({
+        center: region.center,
+        zoom: region.zoom,
+        duration: 1500
+      });
+      regenerateData();
+    }
+
+    function fitBounds() {
+      if (currentData.length === 0) return;
+
+      const bounds = new mapboxgl.LngLatBounds();
+      currentData.forEach(d => bounds.extend([d.lng, d.lat]));
+
+      map.fitBounds(bounds, { padding: 50 });
+    }
+
+    function resetView() {
+      const region = REGIONS[document.getElementById('region').value];
+      map.flyTo({
+        center: region.center,
+        zoom: region.zoom,
+        duration: 1000
+      });
+    }
+
+    function updateStats() {
+      if (!map) return;
+
+      const zoom = map.getZoom().toFixed(1);
+      document.getElementById('statZoom').textContent = zoom;
+
+      // Count visible features
+      const features = map.queryRenderedFeatures({ layers: ['unclustered-point', 'clusters'].filter(l => map.getLayer(l)) });
+      document.getElementById('statVisible').textContent = features.length;
+    }
+
+    // =========================================
+    // UTILITIES
+    // =========================================
+    function mixColors(color1, color2, ratio) {
+      const hex = (c) => parseInt(c.slice(1), 16);
+      const r = (h) => (h >> 16) & 255;
+      const g = (h) => (h >> 8) & 255;
+      const b = (h) => h & 255;
+
+      const h1 = hex(color1);
+      const h2 = hex(color2);
+
+      const nr = Math.round(r(h1) * (1 - ratio) + r(h2) * ratio);
+      const ng = Math.round(g(h1) * (1 - ratio) + g(h2) * ratio);
+      const nb = Math.round(b(h1) * (1 - ratio) + b(h2) * ratio);
+
+      return `#${((1 << 24) + (nr << 16) + (ng << 8) + nb).toString(16).slice(1)}`;
+    }
+
+    // Initialize on load
+    init();
+  </script>
+</body>
+</html>
