@@ -1527,8 +1527,8 @@
             <div class="section-title">Generation</div>
             <div class="control-group">
               <label>Point Count</label>
-              <input type="range" id="pointCount" min="10" max="10000" step="10" value="500" oninput="updatePointCount(this.value)">
-              <div class="value-display"><span id="pointCountValue">500</span> points</div>
+              <input type="range" id="pointCount" min="10" max="10000" step="10" value="2000" oninput="updatePointCount(this.value)">
+              <div class="value-display"><span id="pointCountValue">2000</span> points</div>
             </div>
             <div class="control-group">
               <label>Distribution</label>
@@ -1536,14 +1536,14 @@
                 <option value="clustered">Clustered (Neighborhoods)</option>
                 <option value="uniform">Uniform (Spread)</option>
                 <option value="route">I-35 Corridor</option>
-                <option value="coastal">Houston Coast / City Loops</option>
+                <option value="coastal" selected>Houston Coast / City Loops</option>
               </select>
             </div>
             <div class="control-group">
               <label>Region</label>
               <select id="region" onchange="changeRegion()">
                 <option value="texas">Texas (All)</option>
-                <option value="houston">Houston</option>
+                <option value="houston" selected>Houston</option>
                 <option value="dallas">Dallas-Fort Worth</option>
                 <option value="austin">Austin</option>
                 <option value="sanantonio">San Antonio</option>
