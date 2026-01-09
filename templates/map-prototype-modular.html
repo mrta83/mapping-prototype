@@ -6,6 +6,8 @@
   <title>Texas Locations Prototype</title>
   <script src="https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css" rel="stylesheet">
+  <!-- Three.js for 3D visualizations -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     * {
@@ -1419,6 +1421,39 @@
         </div>
       </div>
 
+      <!-- 3D Spires Settings -->
+      <div class="section hidden" id="spiresSettings">
+        <div class="section-title">3D Spires Settings</div>
+        <div class="control-group">
+          <label>Height Represents</label>
+          <div class="btn-group">
+            <button class="btn active" data-spires-metric="volume">Volume</button>
+            <button class="btn" data-spires-metric="uniform">Uniform</button>
+          </div>
+        </div>
+        <div class="control-group">
+          <label>Height Scale</label>
+          <input type="range" id="spiresHeightScale" min="200" max="2000" step="50" value="800">
+          <div class="value-display"><span id="spiresHeightScaleValue">800</span></div>
+        </div>
+        <div class="control-group">
+          <label>Base Radius</label>
+          <input type="range" id="spiresRadius" min="10" max="100" step="5" value="40">
+          <div class="value-display"><span id="spiresRadiusValue">40</span>m</div>
+        </div>
+        <div class="control-group">
+          <label>Opacity</label>
+          <input type="range" id="spiresOpacity" min="0.3" max="1" step="0.05" value="0.85">
+          <div class="value-display"><span id="spiresOpacityValue">0.85</span></div>
+        </div>
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="spiresAnimate" checked>
+            Animate pulse effect
+          </label>
+        </div>
+      </div>
+
       <!-- Style and 3D Sections moved to mode selector on map -->
 
       <!-- Colors Section -->
@@ -1476,6 +1511,10 @@
         <button class="map-mode-btn" data-mode="markers" onclick="setMode('markers')">
           <span class="mode-icon">♻️</span>
           <span>Markers</span>
+        </button>
+        <button class="map-mode-btn" data-mode="spires" onclick="setMode('spires')">
+          <span class="mode-icon">📊</span>
+          <span>3D Spires</span>
         </button>
 
         <!-- Map Style -->

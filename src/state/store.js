@@ -3,7 +3,7 @@
  * @module state/store
  */
 
-import { MODES, CLUSTER_DEFAULTS, HEATMAP_DEFAULTS, MARKER_DEFAULTS } from '../config/constants.js';
+import { MODES, CLUSTER_DEFAULTS, HEATMAP_DEFAULTS, MARKER_DEFAULTS, SPIRES_DEFAULTS } from '../config/constants.js';
 
 /**
  * @typedef {Object} ClusterSettings
@@ -27,6 +27,15 @@ import { MODES, CLUSTER_DEFAULTS, HEATMAP_DEFAULTS, MARKER_DEFAULTS } from '../c
  * @property {string} icon - Current marker icon name
  * @property {number} baseSize - Base marker size multiplier
  * @property {boolean} scaleByVolume - Whether to scale markers by volume
+ */
+
+/**
+ * @typedef {Object} SpiresSettings
+ * @property {number} heightScale - Height multiplier for spires
+ * @property {number} baseRadius - Base radius in meters
+ * @property {number} opacity - Spires opacity (0-1)
+ * @property {'volume'|'uniform'} heightMetric - What spire height represents
+ * @property {boolean} animate - Whether to animate spires
  */
 
 /**
@@ -103,6 +112,15 @@ const state = {
     icon: 'recycling-bin',
     baseSize: MARKER_DEFAULTS.BASE_SIZE,
     scaleByVolume: true
+  },
+
+  /** @type {SpiresSettings} */
+  spires: {
+    heightScale: SPIRES_DEFAULTS.HEIGHT_SCALE,
+    baseRadius: SPIRES_DEFAULTS.BASE_RADIUS,
+    opacity: SPIRES_DEFAULTS.OPACITY,
+    heightMetric: 'volume',
+    animate: SPIRES_DEFAULTS.ANIMATE
   },
 
   /** @type {ColorSettings} */
@@ -396,6 +414,26 @@ export function setMarkerSetting(key, value) {
 }
 
 /**
+ * Get spires settings
+ * @returns {SpiresSettings}
+ */
+export function getSpiresSettings() {
+  return { ...state.spires };
+}
+
+/**
+ * Update spires setting
+ * @param {keyof SpiresSettings} key
+ * @param {*} value
+ */
+export function setSpiresSetting(key, value) {
+  if (state.spires[key] !== value) {
+    state.spires[key] = value;
+    notify(`spires.${key}`, value);
+  }
+}
+
+/**
  * Get color settings
  * @returns {ColorSettings}
  */
@@ -460,6 +498,11 @@ const validators = {
   'heatmap.opacity': (value) => typeof value === 'number' && value >= 0 && value <= 1,
   'markers.baseSize': (value) => typeof value === 'number' && value >= 0.1 && value <= 3,
   'markers.scaleByVolume': (value) => typeof value === 'boolean',
+  'spires.heightScale': (value) => typeof value === 'number' && value >= 100 && value <= 5000,
+  'spires.baseRadius': (value) => typeof value === 'number' && value >= 10 && value <= 200,
+  'spires.opacity': (value) => typeof value === 'number' && value >= 0 && value <= 1,
+  'spires.heightMetric': (value) => ['volume', 'uniform'].includes(value),
+  'spires.animate': (value) => typeof value === 'boolean',
   'colors.primary': (value) => typeof value === 'string' && /^#[0-9A-Fa-f]{6}$/.test(value),
   'colors.secondary': (value) => typeof value === 'string' && /^#[0-9A-Fa-f]{6}$/.test(value)
 };
@@ -561,6 +604,7 @@ const persistedKeys = [
   'cluster',
   'heatmap',
   'markers',
+  'spires',
   'colors'
 ];
 
@@ -760,6 +804,11 @@ export function resetState() {
     setState('markers.icon', 'recycling-bin');
     setState('markers.baseSize', MARKER_DEFAULTS.BASE_SIZE);
     setState('markers.scaleByVolume', true);
+    setState('spires.heightScale', SPIRES_DEFAULTS.HEIGHT_SCALE);
+    setState('spires.baseRadius', SPIRES_DEFAULTS.BASE_RADIUS);
+    setState('spires.opacity', SPIRES_DEFAULTS.OPACITY);
+    setState('spires.heightMetric', 'volume');
+    setState('spires.animate', SPIRES_DEFAULTS.ANIMATE);
     setState('colors.primary', '#3b82f6');
     setState('colors.secondary', '#ef4444');
   });

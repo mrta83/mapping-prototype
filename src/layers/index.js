@@ -7,7 +7,7 @@ import { LAYER_IDS, SOURCE_IDS, MODES } from '../config/constants.js';
 import { VOLUME_RANGES } from '../config/regions.js';
 import {
   getMap, getMode, getGeoJSON, getFilters,
-  getClusterSettings, getHeatmapSettings, getMarkerSettings, getColors
+  getClusterSettings, getHeatmapSettings, getMarkerSettings, getSpiresSettings, getColors
 } from '../state/store.js';
 import {
   getFilteredGeoJSON,
@@ -17,6 +17,7 @@ import {
 import { createClusterLayers } from './clusters.js';
 import { createHeatmapLayers } from './heatmap.js';
 import { createMarkerLayers } from './markers.js';
+import { addSpiresLayer, removeSpiresLayer, SPIRES_LAYER_ID } from '../three/DataSpires.js';
 
 /**
  * All layer IDs that may be added by the application
@@ -30,7 +31,8 @@ const ALL_LAYER_IDS = [
   LAYER_IDS.UNCLUSTERED_GLOW,
   LAYER_IDS.HEATMAP,
   LAYER_IDS.MARKERS,
-  LAYER_IDS.MARKERS_LABELS
+  LAYER_IDS.MARKERS_LABELS,
+  SPIRES_LAYER_ID
 ];
 
 /**
@@ -39,6 +41,9 @@ const ALL_LAYER_IDS = [
  */
 export function removeAllLayers(map = getMap()) {
   if (!map) return;
+
+  // Remove Three.js spires layer (needs special handling)
+  removeSpiresLayer();
 
   ALL_LAYER_IDS.forEach(id => {
     if (map.getLayer(id)) {
@@ -132,6 +137,12 @@ function createLayersForMode(mode) {
       });
     }
 
+    case MODES.SPIRES: {
+      // Spires are handled separately via Three.js
+      // Return empty array - spires layer is added in rebuildForMode
+      return [];
+    }
+
     default:
       console.warn(`Unknown mode: ${mode}`);
       return [];
@@ -203,10 +214,25 @@ export function rebuildForMode(map = getMap()) {
     return 0;
   }
 
+  const mode = getMode();
+
   // Remove existing layers and source
   removeAllLayers(map);
 
-  // Add source with filtered data
+  // Handle spires mode specially (Three.js layer)
+  if (mode === MODES.SPIRES) {
+    const settings = getSpiresSettings();
+    addSpiresLayer({
+      heightScale: settings.heightScale,
+      baseRadius: settings.baseRadius,
+      opacity: settings.opacity,
+      heightMetric: settings.heightMetric,
+      animate: settings.animate
+    });
+    return filteredData.features.length;
+  }
+
+  // Add source with filtered data (for non-spires modes)
   addSource(map, filteredData);
 
   // Add layers for current mode

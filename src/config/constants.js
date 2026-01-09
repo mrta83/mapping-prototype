@@ -59,6 +59,16 @@ export const MARKER_DEFAULTS = {
 };
 
 /**
+ * 3D Spires configuration defaults
+ */
+export const SPIRES_DEFAULTS = {
+  HEIGHT_SCALE: 800,
+  BASE_RADIUS: 40,
+  OPACITY: 0.85,
+  ANIMATE: true
+};
+
+/**
  * Data generation defaults
  */
 export const DATA_DEFAULTS = {
@@ -80,7 +90,8 @@ export const LAYER_IDS = {
   MARKERS: 'markers',
   MARKERS_LABELS: 'markers-labels',
   BUILDINGS_3D: '3d-buildings',
-  SKY: 'sky'
+  SKY: 'sky',
+  SPIRES: 'three-spires'
 };
 
 /**
@@ -98,7 +109,8 @@ export const SOURCE_IDS = {
 export const MODES = {
   CLUSTERS: 'clusters',
   HEATMAP: 'heatmap',
-  MARKERS: 'markers'
+  MARKERS: 'markers',
+  SPIRES: 'spires'
 };
 
 /**

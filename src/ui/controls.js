@@ -6,8 +6,8 @@
 import { TIMING, MODES } from '../config/constants.js';
 import {
   getMap, getMode, setMode,
-  setFilter, setClusterSetting, setHeatmapSetting, setMarkerSetting, setColor,
-  setAutoSwitchedToCluster
+  setFilter, setClusterSetting, setHeatmapSetting, setMarkerSetting, setSpiresSetting, setColor,
+  setAutoSwitchedToCluster, getSpiresSettings
 } from '../state/store.js';
 import { rebuildForMode, updateClusterOpacity, updateHeatmapProperties } from '../layers/index.js';
 import { updateLegend } from './legend.js';
@@ -81,6 +81,7 @@ export function switchMode(mode, isAutoSwitch = false) {
   document.getElementById('clusterSettings').classList.toggle('hidden', mode !== MODES.CLUSTERS);
   document.getElementById('heatmapSettings').classList.toggle('hidden', mode !== MODES.HEATMAP);
   document.getElementById('markersSettings').classList.toggle('hidden', mode !== MODES.MARKERS);
+  document.getElementById('spiresSettings')?.classList.toggle('hidden', mode !== MODES.SPIRES);
 
   // Rebuild layers
   const map = getMap();
@@ -271,6 +272,74 @@ export function updatePointCount(value) {
 }
 
 /**
+ * Set spires height metric
+ * @param {'volume'|'uniform'} metric
+ */
+export function setSpiresHeightMetric(metric) {
+  setSpiresSetting('heightMetric', metric);
+
+  document.querySelectorAll('[data-spires-metric]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.spiresMetric === metric);
+  });
+
+  if (getMode() === MODES.SPIRES) {
+    rebuildForMode();
+  }
+  updateLegend();
+}
+
+/**
+ * Update spires height scale
+ * @param {number} value
+ */
+export function updateSpiresHeightScale(value) {
+  document.getElementById('spiresHeightScaleValue').textContent = value;
+  setSpiresSetting('heightScale', parseInt(value));
+
+  if (getMode() === MODES.SPIRES) {
+    rebuildForMode();
+  }
+}
+
+/**
+ * Update spires base radius
+ * @param {number} value
+ */
+export function updateSpiresRadius(value) {
+  document.getElementById('spiresRadiusValue').textContent = value;
+  setSpiresSetting('baseRadius', parseInt(value));
+
+  if (getMode() === MODES.SPIRES) {
+    rebuildForMode();
+  }
+}
+
+/**
+ * Update spires opacity
+ * @param {number} value
+ */
+export function updateSpiresOpacity(value) {
+  document.getElementById('spiresOpacityValue').textContent = value;
+  setSpiresSetting('opacity', parseFloat(value));
+
+  if (getMode() === MODES.SPIRES) {
+    rebuildForMode();
+  }
+}
+
+/**
+ * Toggle spires animation
+ */
+export function updateSpiresAnimation() {
+  const animate = document.getElementById('spiresAnimate').checked;
+  setSpiresSetting('animate', animate);
+
+  if (getMode() === MODES.SPIRES) {
+    rebuildForMode();
+  }
+}
+
+/**
  * Update primary/secondary colors
  */
 export function updateColors() {
@@ -342,6 +411,15 @@ export function initControlListeners() {
   document.getElementById('heatOpacity')?.addEventListener('input', updateHeatmap);
   document.getElementById('markerSize')?.addEventListener('input', (e) => updateMarkerSize(e.target.value));
   document.getElementById('pointCount')?.addEventListener('input', (e) => updatePointCount(e.target.value));
+
+  // Spires controls
+  document.querySelectorAll('[data-spires-metric]').forEach(btn => {
+    btn.addEventListener('click', () => setSpiresHeightMetric(btn.dataset.spiresMetric));
+  });
+  document.getElementById('spiresHeightScale')?.addEventListener('input', (e) => updateSpiresHeightScale(e.target.value));
+  document.getElementById('spiresRadius')?.addEventListener('input', (e) => updateSpiresRadius(e.target.value));
+  document.getElementById('spiresOpacity')?.addEventListener('input', (e) => updateSpiresOpacity(e.target.value));
+  document.getElementById('spiresAnimate')?.addEventListener('change', updateSpiresAnimation);
 
   // Checkbox inputs
   document.getElementById('scaleByVolume')?.addEventListener('change', updateMarkerScaling);
